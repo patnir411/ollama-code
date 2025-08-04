@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Config, GitService, Logger } from '@qwen-code/qwen-code-core';
+import { Config, GitService, Logger } from '@tcsenpai/ollama-code';
 import { LoadedSettings } from '../../config/settings.js';
 import { UseHistoryManagerReturn } from '../hooks/useHistoryManager.js';
 import { SessionStatsState } from '../contexts/SessionContext.js';
@@ -65,8 +65,7 @@ export interface MessageActionReturn {
  */
 export interface OpenDialogActionReturn {
   type: 'dialog';
-  // TODO: Add 'theme' | 'auth' | 'editor' | 'privacy' as migration happens.
-  dialog: 'help' | 'auth' | 'theme' | 'privacy';
+  dialog: 'help' | 'auth' | 'theme' | 'privacy' | 'editor';
 }
 
 export type SlashCommandActionReturn =

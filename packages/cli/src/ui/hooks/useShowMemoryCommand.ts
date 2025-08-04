@@ -5,7 +5,7 @@
  */
 
 import { Message, MessageType } from '../types.js';
-import { Config } from '@qwen-code/qwen-code-core';
+import { Config } from '@tcsenpai/ollama-code';
 import { LoadedSettings } from '../../config/settings.js';
 
 export function createShowMemoryAction(

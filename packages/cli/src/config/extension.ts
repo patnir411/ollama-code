@@ -4,12 +4,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { MCPServerConfig } from '@qwen-code/qwen-code-core';
+import { MCPServerConfig } from '@tcsenpai/ollama-code';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 
-export const EXTENSIONS_DIRECTORY_NAME = path.join('.qwen', 'extensions');
+export const EXTENSIONS_DIRECTORY_NAME = path.join('.ollama', 'extensions');
 export const EXTENSIONS_CONFIG_FILENAME = 'gemini-extension.json';
 
 export interface Extension {
@@ -34,9 +34,7 @@ export function loadExtensions(workspaceDir: string): Extension[] {
   const uniqueExtensions = new Map<string, Extension>();
   for (const extension of allExtensions) {
     if (!uniqueExtensions.has(extension.config.name)) {
-      console.log(
-        `Loading extension: ${extension.config.name} (version: ${extension.config.version})`,
-      );
+      // Extension loaded successfully
       uniqueExtensions.set(extension.config.name, extension);
     }
   }
@@ -130,7 +128,7 @@ export function filterActiveExtensions(
     lowerCaseEnabledExtensions.has('none')
   ) {
     if (extensions.length > 0) {
-      console.log('All extensions are disabled.');
+      // All extensions disabled by user configuration
     }
     return [];
   }
@@ -141,13 +139,11 @@ export function filterActiveExtensions(
   for (const extension of extensions) {
     const lowerCaseName = extension.config.name.toLowerCase();
     if (lowerCaseEnabledExtensions.has(lowerCaseName)) {
-      console.log(
-        `Activated extension: ${extension.config.name} (version: ${extension.config.version})`,
-      );
+      // Extension activated successfully
       activeExtensions.push(extension);
       notFoundNames.delete(lowerCaseName);
     } else {
-      console.log(`Disabled extension: ${extension.config.name}`);
+      // Extension disabled by configuration
     }
   }
 

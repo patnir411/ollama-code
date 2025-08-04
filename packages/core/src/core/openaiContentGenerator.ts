@@ -79,7 +79,7 @@ interface OpenAIResponseFormat {
 }
 
 export class OpenAIContentGenerator implements ContentGenerator {
-  private client: OpenAI;
+  private client!: OpenAI;
   private model: string;
   private config: Config;
   private streamingToolCalls: Map<
@@ -91,10 +91,24 @@ export class OpenAIContentGenerator implements ContentGenerator {
     }
   > = new Map();
 
+  private apiKey: string;
+
   constructor(apiKey: string, model: string, config: Config) {
+    this.apiKey = apiKey;
     this.model = model;
     this.config = config;
+    this.initializeClient();
+  }
+
+  private initializeClient(): void {
     const baseURL = process.env.OLLAMA_BASE_URL || process.env.OPENAI_BASE_URL || 'http://localhost:11434/v1';
+    
+    // Debug logging
+    console.log('[DEBUG] OpenAI Content Generator initialized with:');
+    console.log('[DEBUG] - baseURL:', baseURL);
+    console.log('[DEBUG] - model:', this.model);
+    console.log('[DEBUG] - OLLAMA_BASE_URL:', process.env.OLLAMA_BASE_URL);
+    console.log('[DEBUG] - OPENAI_BASE_URL:', process.env.OPENAI_BASE_URL);
 
     // Configure timeout settings - using progressive timeouts
     const timeoutConfig = {
@@ -116,11 +130,26 @@ export class OpenAIContentGenerator implements ContentGenerator {
     }
 
     this.client = new OpenAI({
-      apiKey,
+      apiKey: this.apiKey,
       baseURL,
       timeout: timeoutConfig.timeout,
       maxRetries: timeoutConfig.maxRetries,
     });
+  }
+
+  /**
+   * Reinitialize the OpenAI client with current environment variables
+   */
+  public updateClient(): void {
+    this.initializeClient();
+  }
+
+  /**
+   * Strip thinking tags from content
+   */
+  private stripThinkingTags(content: string): string {
+    // Replace <think>...</think> tags with markdown italics
+    return content.replace(/<think>([\s\S]*?)<\/think>/gi, '*$1*');
   }
 
   /**
@@ -182,7 +211,6 @@ export class OpenAIContentGenerator implements ContentGenerator {
           request.config.tools,
         );
       }
-      // console.log('createParams', createParams);
       const completion = (await this.client.chat.completions.create(
         createParams,
       )) as ChatCompletion;
@@ -211,6 +239,13 @@ export class OpenAIContentGenerator implements ContentGenerator {
       return response;
     } catch (error) {
       const durationMs = Date.now() - startTime;
+
+      // Debug logging for connection errors
+      console.log('[DEBUG] OpenAI API call failed:');
+      console.log('[DEBUG] - Error type:', error?.constructor?.name);
+      console.log('[DEBUG] - Error message:', error instanceof Error ? error.message : String(error));
+      console.log('[DEBUG] - Error stack:', error instanceof Error ? error.stack : 'No stack');
+      console.log('[DEBUG] - Duration:', durationMs + 'ms');
 
       // Identify timeout errors specifically
       const isTimeoutError = this.isTimeoutError(error);
@@ -308,7 +343,6 @@ export class OpenAIContentGenerator implements ContentGenerator {
         );
       }
 
-      // console.log('createParams', createParams);
 
       const stream = (await this.client.chat.completions.create(
         createParams,
@@ -737,10 +771,6 @@ export class OpenAIContentGenerator implements ContentGenerator {
       }
     }
 
-    // console.log(
-    //   'OpenAI Tools Parameters:',
-    //   JSON.stringify(openAITools, null, 2),
-    // );
     return openAITools;
   }
 
@@ -1099,7 +1129,11 @@ export class OpenAIContentGenerator implements ContentGenerator {
 
     // Handle text content
     if (choice.message.content) {
-      parts.push({ text: choice.message.content });
+      // Filter out thinking tags
+      const cleanedContent = this.stripThinkingTags(choice.message.content);
+      if (cleanedContent.trim()) {
+        parts.push({ text: cleanedContent });
+      }
     }
 
     // Handle tool calls
@@ -1186,6 +1220,8 @@ export class OpenAIContentGenerator implements ContentGenerator {
 
       // Handle text content
       if (choice.delta?.content) {
+        // For streaming, we can't filter thinking tags until we have the complete content
+        // So we'll pass it through and let the client handle it
         parts.push({ text: choice.delta.content });
       }
 

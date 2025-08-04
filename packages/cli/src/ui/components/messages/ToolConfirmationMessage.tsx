@@ -14,7 +14,7 @@ import {
   ToolExecuteConfirmationDetails,
   ToolMcpConfirmationDetails,
   Config,
-} from '@qwen-code/qwen-code-core';
+} from '@tcsenpai/ollama-code';
 import {
   RadioButtonSelect,
   RadioSelectItem,

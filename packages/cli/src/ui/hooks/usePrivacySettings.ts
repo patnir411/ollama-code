@@ -10,7 +10,7 @@ import {
   Config,
   CodeAssistServer,
   UserTierId,
-} from '@qwen-code/qwen-code-core';
+} from '@tcsenpai/ollama-code';
 
 export interface PrivacyState {
   isLoading: boolean;

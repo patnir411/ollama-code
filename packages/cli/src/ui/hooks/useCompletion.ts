@@ -15,7 +15,7 @@ import {
   getErrorMessage,
   Config,
   FileDiscoveryService,
-} from '@qwen-code/qwen-code-core';
+} from '@tcsenpai/ollama-code';
 import {
   MAX_SUGGESTIONS_TO_SHOW,
   Suggestion,

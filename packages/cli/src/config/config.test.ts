@@ -9,12 +9,12 @@ import * as os from 'os';
 import { loadCliConfig, parseArguments } from './config.js';
 import { Settings } from './settings.js';
 import { Extension } from './extension.js';
-import * as ServerConfig from '@qwen-code/qwen-code-core';
+import * as ServerConfig from '@tcsenpai/ollama-code';
 import {
   TelemetryTarget,
   ConfigParameters,
   DEFAULT_TELEMETRY_TARGET,
-} from '@qwen-code/qwen-code-core';
+} from '@tcsenpai/ollama-code';
 
 vi.mock('os', async (importOriginal) => {
   const actualOs = await importOriginal<typeof os>();
@@ -34,9 +34,9 @@ vi.mock('read-package-up', () => ({
   ),
 }));
 
-vi.mock('@qwen-code/qwen-code-core', async () => {
+vi.mock('@tcsenpai/ollama-code', async () => {
   const actualServer = await vi.importActual<typeof ServerConfig>(
-    '@qwen-code/qwen-code-core',
+    '@tcsenpai/ollama-code',
   );
   return {
     ...actualServer,
@@ -550,7 +550,7 @@ describe('Hierarchical Memory Loading (config.ts) - Placeholder Suite', () => {
   // Example of a previously failing test structure:
   /*
   it('should correctly use mocked homedir for global path', async () => {
-    const MOCK_GEMINI_DIR_LOCAL = path.join('/mock/home/user', '.qwen');
+    const MOCK_GEMINI_DIR_LOCAL = path.join('/mock/home/user', '.ollama');
     const MOCK_GLOBAL_PATH_LOCAL = path.join(MOCK_GEMINI_DIR_LOCAL, 'OLLAMA.md');
     mockFs({
       [MOCK_GLOBAL_PATH_LOCAL]: { type: 'file', content: 'GlobalContentOnly' }

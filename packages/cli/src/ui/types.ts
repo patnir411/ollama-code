@@ -7,7 +7,7 @@
 import {
   ToolCallConfirmationDetails,
   ToolResultDisplay,
-} from '@qwen-code/qwen-code-core';
+} from '@tcsenpai/ollama-code';
 
 // Only defining the state enum needed by the UI
 export enum StreamingState {

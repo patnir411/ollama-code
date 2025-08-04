@@ -15,7 +15,7 @@ import {
   BugCommandSettings,
   TelemetrySettings,
   AuthType,
-} from '@qwen-code/qwen-code-core';
+} from '@tcsenpai/ollama-code';
 import stripJsonComments from 'strip-json-comments';
 import { DefaultLight } from '../ui/themes/default-light.js';
 import { DefaultDark } from '../ui/themes/default.js';
@@ -64,6 +64,7 @@ export interface Settings {
   theme?: string;
   selectedAuthType?: AuthType;
   sandbox?: boolean | string;
+  ollama?: OllamaConfig;
   coreTools?: string[];
   excludeTools?: string[];
   toolDiscoveryCommand?: string;
@@ -360,6 +361,17 @@ export function loadSettings(workspaceDir: string): LoadedSettings {
         userSettings.theme = DefaultLight.name;
       } else if (userSettings.theme && userSettings.theme === 'VS2015') {
         userSettings.theme = DefaultDark.name;
+      }
+      
+      // Apply Ollama settings to environment if not already set
+      if (userSettings.ollama) {
+        if (userSettings.ollama.baseUrl && !process.env.OLLAMA_BASE_URL && !process.env.OPENAI_BASE_URL) {
+          process.env.OLLAMA_BASE_URL = userSettings.ollama.baseUrl;
+          process.env.OPENAI_BASE_URL = userSettings.ollama.baseUrl;
+        }
+        if (userSettings.ollama.model && !process.env.OLLAMA_MODEL) {
+          process.env.OLLAMA_MODEL = userSettings.ollama.model;
+        }
       }
     }
   } catch (error: unknown) {

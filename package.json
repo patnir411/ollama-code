@@ -76,7 +76,5 @@
     "vitest": "^3.2.4",
     "yargs": "^18.0.0"
   },
-  "dependencies": {
-    "@tcsenpai/ollama-code-core": "^0.0.1-alpha.8"
-  }
+  "dependencies": {}
 }

@@ -25,7 +25,7 @@ import {
   UnauthorizedError,
   UserPromptEvent,
   DEFAULT_GEMINI_FLASH_MODEL,
-} from '@qwen-code/qwen-code-core';
+} from '@tcsenpai/ollama-code';
 import { type Part, type PartListUnion } from '@google/genai';
 import {
   StreamingState,

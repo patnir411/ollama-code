@@ -18,7 +18,8 @@ import {
   MCPServerStatus,
   getMCPDiscoveryState,
   getMCPServerStatus,
-} from '@qwen-code/qwen-code-core';
+} from '@tcsenpai/ollama-code';
+import { setOllamaBaseUrl, setOllamaModel } from '../../config/auth.js';
 import { useSessionStats } from '../contexts/SessionContext.js';
 import {
   Message,
@@ -811,6 +812,104 @@ export const useSlashCommandProcessor = (
         },
       },
       {
+        name: 'model',
+        description: 'set the AI model to use. Usage: /model <model-name>',
+        action: async (_mainCommand, _subCommand, args) => {
+          const modelName = (_subCommand || args || '').trim();
+          if (!modelName) {
+            const currentModel = config?.getModel() || process.env.OLLAMA_MODEL || 'Not set';
+            addMessage({
+              type: MessageType.INFO,
+              content: `Current model: ${currentModel}\nUsage: /model <model-name>`,
+              timestamp: new Date(),
+            });
+            return;
+          }
+
+          // Set the model both in config and environment
+          config?.setModel(modelName);
+          setOllamaModel(modelName);
+          
+          // Save to user settings for persistence
+          try {
+            const userSettingsFile = settings.user;
+            if (userSettingsFile) {
+              if (!userSettingsFile.settings.ollama) {
+                userSettingsFile.settings.ollama = {};
+              }
+              userSettingsFile.settings.ollama.model = modelName;
+              const { saveSettings } = await import('../../config/settings.js');
+              saveSettings(userSettingsFile);
+            }
+          } catch (error) {
+            console.warn('[WARN] Could not save model to settings:', error);
+          }
+          
+          addMessage({
+            type: MessageType.INFO,
+            content: `Model set to: ${modelName}`,
+            timestamp: new Date(),
+          });
+        },
+      },
+      {
+        name: 'provider',
+        altName: 'url',
+        description: 'set the provider URL. Usage: /provider <url> or /url <url>',
+        action: async (_mainCommand, _subCommand, args) => {
+          const providerUrl = (_subCommand || args || '').trim();
+          if (!providerUrl) {
+            const currentUrl = process.env.OLLAMA_BASE_URL || process.env.OPENAI_BASE_URL || 'http://localhost:11434/v1';
+            addMessage({
+              type: MessageType.INFO,
+              content: `Current provider URL: ${currentUrl}\nUsage: /provider <url> or /url <url>`,
+              timestamp: new Date(),
+            });
+            return;
+          }
+
+          // Set the base URL in both environment variables
+          setOllamaBaseUrl(providerUrl);
+          process.env.OPENAI_BASE_URL = providerUrl;
+          
+          // Update the OpenAI client to use the new URL
+          try {
+            const geminiClient = config?.getGeminiClient();
+            if (geminiClient) {
+              // Access the content generator and update it
+              const contentGenerator = geminiClient.getContentGenerator();
+              if (contentGenerator && typeof (contentGenerator as any).updateClient === 'function') {
+                (contentGenerator as any).updateClient();
+                console.log('[DEBUG] Updated OpenAI client with new provider URL');
+              }
+            }
+          } catch (error) {
+            console.warn('[WARN] Could not update OpenAI client:', error);
+          }
+          
+          // Save to user settings for persistence
+          try {
+            const userSettingsFile = settings.user;
+            if (userSettingsFile) {
+              if (!userSettingsFile.settings.ollama) {
+                userSettingsFile.settings.ollama = {};
+              }
+              userSettingsFile.settings.ollama.baseUrl = providerUrl;
+              const { saveSettings } = await import('../../config/settings.js');
+              saveSettings(userSettingsFile);
+            }
+          } catch (error) {
+            console.warn('[WARN] Could not save provider URL to settings:', error);
+          }
+          
+          addMessage({
+            type: MessageType.INFO,
+            content: `Provider URL set to: ${providerUrl}`,
+            timestamp: new Date(),
+          });
+        },
+      },
+      {
         name: 'compress',
         altName: 'summarize',
         description: 'Compresses the context by replacing it with a summary.',
@@ -1093,6 +1192,9 @@ export const useSlashCommandProcessor = (
                   case 'privacy':
                     openPrivacyNotice();
                     return { type: 'handled' };
+                  case 'editor':
+                    openEditorDialog();
+                    return { type: 'handled' };
                   default: {
                     const unhandled: never = result.dialog;
                     throw new Error(
@@ -1171,6 +1273,7 @@ export const useSlashCommandProcessor = (
       addItem,
       setShowHelp,
       openAuthDialog,
+      openEditorDialog,
       commands,
       legacyCommands,
       commandContext,

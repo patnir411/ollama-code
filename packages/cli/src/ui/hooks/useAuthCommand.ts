@@ -11,7 +11,7 @@ import {
   Config,
   clearCachedCredentialFile,
   getErrorMessage,
-} from '@qwen-code/qwen-code-core';
+} from '@tcsenpai/ollama-code';
 import { runExitCleanup } from '../../utils/cleanup.js';
 
 export const useAuthCommand = (
