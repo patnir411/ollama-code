@@ -830,6 +830,20 @@ export const useSlashCommandProcessor = (
           config?.setModel(modelName);
           setOllamaModel(modelName);
           
+          // Update the OpenAI client to use the new model
+          try {
+            const geminiClient = config?.getGeminiClient();
+            if (geminiClient) {
+              const contentGenerator = geminiClient.getContentGenerator();
+              if (contentGenerator && typeof (contentGenerator as any).updateModel === 'function') {
+                (contentGenerator as any).updateModel(modelName);
+                console.log('[DEBUG] Updated OpenAI client with new model');
+              }
+            }
+          } catch (error) {
+            console.warn('[WARN] Could not update OpenAI client model:', error);
+          }
+          
           // Save to user settings for persistence
           try {
             const userSettingsFile = settings.user;

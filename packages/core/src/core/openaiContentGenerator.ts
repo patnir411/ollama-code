@@ -145,6 +145,14 @@ export class OpenAIContentGenerator implements ContentGenerator {
   }
 
   /**
+   * Update the model being used
+   */
+  public updateModel(model: string): void {
+    this.model = model;
+    console.log('[DEBUG] Updated model to:', this.model);
+  }
+
+  /**
    * Strip thinking tags from content
    */
   private stripThinkingTags(content: string): string {
