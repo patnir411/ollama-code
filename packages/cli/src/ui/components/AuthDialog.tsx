@@ -45,7 +45,10 @@ export function AuthDialog({
     initialErrorMessage || null,
   );
   const [showOpenAIKeyPrompt, setShowOpenAIKeyPrompt] = useState(false);
-  const items = [{ label: 'OpenAI', value: AuthType.USE_OPENAI }];
+  const items = [
+    { label: 'OpenAI', value: AuthType.USE_OPENAI },
+    { label: 'Vertex AI', value: AuthType.USE_VERTEX_AI }
+  ];
 
   const initialAuthIndex = Math.max(
     0,

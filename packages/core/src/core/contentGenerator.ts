@@ -110,6 +110,8 @@ export async function createContentGeneratorConfig(
   ) {
     contentGeneratorConfig.apiKey = googleApiKey;
     contentGeneratorConfig.vertexai = true;
+    // Support GPT OSS models on Vertex AI
+    contentGeneratorConfig.model = process.env.OLLAMA_MODEL || process.env.OPENAI_MODEL || effectiveModel;
 
     return contentGeneratorConfig;
   }

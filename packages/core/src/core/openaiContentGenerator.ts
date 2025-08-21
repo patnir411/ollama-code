@@ -92,16 +92,18 @@ export class OpenAIContentGenerator implements ContentGenerator {
   > = new Map();
 
   private apiKey: string;
+  private customBaseUrl?: string;
 
-  constructor(apiKey: string, model: string, config: Config) {
+  constructor(apiKey: string, model: string, config: Config, customBaseUrl?: string) {
     this.apiKey = apiKey;
     this.model = model;
     this.config = config;
+    this.customBaseUrl = customBaseUrl;
     this.initializeClient();
   }
 
   private initializeClient(): void {
-    const baseURL = process.env.OLLAMA_BASE_URL || process.env.OPENAI_BASE_URL || 'http://localhost:11434/v1';
+    const baseURL = this.customBaseUrl || process.env.OLLAMA_BASE_URL || process.env.OPENAI_BASE_URL || 'http://localhost:11434/v1';
     
     // Debug logging
     console.log('[DEBUG] OpenAI Content Generator initialized with:');
@@ -129,8 +131,15 @@ export class OpenAIContentGenerator implements ContentGenerator {
       timeoutConfig.maxRetries = contentGeneratorConfig.maxRetries;
     }
 
+    // Handle Vertex AI authentication for GPT OSS models
+    let finalApiKey = this.apiKey;
+    if (baseURL.includes('googleapis.com')) {
+      // For Vertex AI, we need to use Google Cloud access token
+      finalApiKey = this.apiKey || 'vertex-ai-token';
+    }
+
     this.client = new OpenAI({
-      apiKey: this.apiKey,
+      apiKey: finalApiKey,
       baseURL,
       timeout: timeoutConfig.timeout,
       maxRetries: timeoutConfig.maxRetries,
@@ -214,7 +223,18 @@ export class OpenAIContentGenerator implements ContentGenerator {
         ...samplingParams,
       };
 
-      if (request.config?.tools) {
+      // Debug logging for Vertex AI troubleshooting
+      const baseURL = process.env.OLLAMA_BASE_URL || process.env.OPENAI_BASE_URL || 'http://localhost:11434/v1';
+      const isVertexAI = baseURL.includes('googleapis.com');
+      
+      if (isVertexAI) {
+        console.log('[DEBUG] Vertex AI request params:', JSON.stringify(createParams, null, 2));
+      }
+
+      // Check if model supports tools (GPT OSS models on Vertex AI don't support function calling)
+      const supportsTools = !isVertexAI || !this.model.includes('gpt-oss');
+      
+      if (request.config?.tools && supportsTools) {
         createParams.tools = await this.convertGeminiToolsToOpenAI(
           request.config.tools,
         );
@@ -345,7 +365,13 @@ export class OpenAIContentGenerator implements ContentGenerator {
         stream: true,
       };
 
-      if (request.config?.tools) {
+      const baseURL = process.env.OLLAMA_BASE_URL || process.env.OPENAI_BASE_URL || 'http://localhost:11434/v1';
+      const isVertexAI = baseURL.includes('googleapis.com');
+
+      // Check if model supports tools (GPT OSS models on Vertex AI don't support function calling)
+      const supportsTools = !isVertexAI || !this.model.includes('gpt-oss');
+      
+      if (request.config?.tools && supportsTools) {
         createParams.tools = await this.convertGeminiToolsToOpenAI(
           request.config.tools,
         );
@@ -1354,7 +1380,11 @@ export class OpenAIContentGenerator implements ContentGenerator {
     const configSamplingParams =
       this.config.getContentGeneratorConfig()?.samplingParams;
 
-    const params = {
+    // Check if we're using Vertex AI (Google Cloud) endpoint
+    const baseURL = process.env.OLLAMA_BASE_URL || process.env.OPENAI_BASE_URL || 'http://localhost:11434/v1';
+    const isVertexAI = baseURL.includes('googleapis.com');
+
+    const params: Record<string, unknown> = {
       // Temperature: config > request > default
       temperature:
         configSamplingParams?.temperature !== undefined
@@ -1377,27 +1407,30 @@ export class OpenAIContentGenerator implements ContentGenerator {
           : request.config?.topP !== undefined
             ? request.config.topP
             : 1.0,
+    };
 
+    // Only add these parameters if NOT using Vertex AI
+    if (!isVertexAI) {
       // Top-k: config only (not available in request)
-      ...(configSamplingParams?.top_k !== undefined
-        ? { top_k: configSamplingParams.top_k }
-        : {}),
+      if (configSamplingParams?.top_k !== undefined) {
+        params.top_k = configSamplingParams.top_k;
+      }
 
       // Repetition penalty: config only
-      ...(configSamplingParams?.repetition_penalty !== undefined
-        ? { repetition_penalty: configSamplingParams.repetition_penalty }
-        : {}),
+      if (configSamplingParams?.repetition_penalty !== undefined) {
+        params.repetition_penalty = configSamplingParams.repetition_penalty;
+      }
 
       // Presence penalty: config only
-      ...(configSamplingParams?.presence_penalty !== undefined
-        ? { presence_penalty: configSamplingParams.presence_penalty }
-        : {}),
+      if (configSamplingParams?.presence_penalty !== undefined) {
+        params.presence_penalty = configSamplingParams.presence_penalty;
+      }
 
       // Frequency penalty: config only
-      ...(configSamplingParams?.frequency_penalty !== undefined
-        ? { frequency_penalty: configSamplingParams.frequency_penalty }
-        : {}),
-    };
+      if (configSamplingParams?.frequency_penalty !== undefined) {
+        params.frequency_penalty = configSamplingParams.frequency_penalty;
+      }
+    }
 
     return params;
   }
